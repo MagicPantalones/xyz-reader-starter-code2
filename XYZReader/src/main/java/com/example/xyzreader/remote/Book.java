@@ -3,7 +3,7 @@ package com.example.xyzreader.remote;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-public class BookModel implements Parcelable {
+public class Book implements Parcelable {
 
     private int id;
     private String title;
@@ -11,33 +11,33 @@ public class BookModel implements Parcelable {
     private String body;
     private String thumb;
     private String photo;
-    private double aspect_ratio;
-    private int published_date;
+    private float aspect_ratio;
+    private String published_date;
 
-    public static final Parcelable.Creator<BookModel> CREATOR = new Creator<BookModel>() {
+    public static final Parcelable.Creator<Book> CREATOR = new Creator<Book>() {
         @Override
-        public BookModel createFromParcel(Parcel source) {
-            return new BookModel(source);
+        public Book createFromParcel(Parcel source) {
+            return new Book(source);
         }
 
         @Override
-        public BookModel[] newArray(int size) {
-            return new BookModel[size];
+        public Book[] newArray(int size) {
+            return new Book[size];
         }
     };
 
-    public BookModel(Parcel in) {
+    public Book(Parcel in) {
         this.id = (int) in.readValue(int.class.getClassLoader());
         this.title = (String) in.readValue(String.class.getClassLoader());
         this.author = (String) in.readValue(String.class.getClassLoader());
         this.body = (String) in.readValue(String.class.getClassLoader());
         this.thumb = (String) in.readValue(String.class.getClassLoader());
         this.photo = (String) in.readValue(String.class.getClassLoader());
-        this.aspect_ratio = (double) in.readValue(double.class.getClassLoader());
-        this.published_date = (int) in.readValue(int.class.getClassLoader());
+        this.aspect_ratio = (float) in.readValue(float.class.getClassLoader());
+        this.published_date = (String) in.readValue(String.class.getClassLoader());
     }
 
-    public BookModel() {
+    public Book() {
     }
 
     public int getId() { return id; }
@@ -58,11 +58,11 @@ public class BookModel implements Parcelable {
     public String getPhoto() { return photo; }
     public void setPhoto(String photo) { this.photo = photo; }
 
-    public double getAspect_ratio() { return aspect_ratio; }
-    public void setAspect_ratio(double aspect_ratio) { this.aspect_ratio = aspect_ratio; }
+    public float getAspect_ratio() { return aspect_ratio; }
+    public void setAspect_ratio(float aspect_ratio) { this.aspect_ratio = aspect_ratio; }
 
-    public int getPublished_date() { return published_date; }
-    public void setPublished_date(int published_date) { this.published_date = published_date; }
+    public String getPublished_date() { return published_date; }
+    public void setPublished_date(String published_date) { this.published_date = published_date; }
 
     @Override
     public int describeContents() {

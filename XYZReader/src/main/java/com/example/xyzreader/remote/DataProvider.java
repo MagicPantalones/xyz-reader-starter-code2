@@ -1,5 +1,6 @@
 package com.example.xyzreader.remote;
 
+import android.annotation.SuppressLint;
 import android.content.ContentProviderOperation;
 import android.content.ContentValues;
 import android.content.Context;
@@ -7,6 +8,7 @@ import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.example.xyzreader.data.ItemsContract;
@@ -76,12 +78,16 @@ public class DataProvider {
 
     public interface DataListener {
         void onConnectionError(ErrorType error);
-        void onDataAvailable(List<BookModel> books);
+        void onDataAvailable(List<Book> books);
     }
 
-    interface apiCalls {
+    public interface StaticDataListener {
+        void onQueryReturned(List<Book> books);
+    }
+
+    interface ApiCalls {
         @GET("xyz-reader-json")
-        Observable<List<BookModel>> getBookList();
+        Observable<List<Book>> getBookList();
     }
 
 
@@ -113,6 +119,7 @@ public class DataProvider {
 
     private Disposable queryDbForBooks() {
         Uri uri = ItemsContract.Items.buildDirUri();
+        //noinspection ConstantConditions
         return Observable.just(context.getContentResolver().query(
                 uri,
                 PROJECTION,
@@ -126,30 +133,37 @@ public class DataProvider {
     }
 
     private void handleDbResponse(Cursor cursor) {
-        List<BookModel> books = new ArrayList<>();
+        List<Book> books = createListFromCursor(cursor);
+        if (dataListener != null && !books.isEmpty()) {
+            dataListener.onDataAvailable(books);
+        } else if (isInternetConnected()){
+            dataFetchDisposable = fetchData();
+        }
+    }
+
+    private static List<Book> createListFromCursor(Cursor cursor) {
+        List<Book> books = new ArrayList<>();
         if (cursor != null && cursor.getCount() > 0) {
             while (cursor.moveToNext()) {
-                BookModel book = new BookModel();
+                Book book = new Book();
                 book.setId(cursor.getInt(_ID));
                 book.setTitle(cursor.getString(TITLE));
                 book.setAuthor(cursor.getString(AUTHOR));
                 book.setBody(cursor.getString(BODY));
                 book.setThumb(cursor.getString(THUMB_URL));
                 book.setPhoto(cursor.getString(PHOTO_URL));
-                book.setAspect_ratio(cursor.getDouble(ASPECT_RATIO));
-                book.setPublished_date(cursor.getInt(PUBLISHED_DATE));
+                book.setAspect_ratio(cursor.getFloat(ASPECT_RATIO));
+                book.setPublished_date(cursor.getString(PUBLISHED_DATE));
                 books.add(book);
             }
             cursor.close();
-            if (dataListener != null) dataListener.onDataAvailable(books);
-        } else if (isInternetConnected()){
-            dataFetchDisposable = fetchData();
         }
+        return books;
     }
 
 
     private Disposable fetchData() {
-        return getRetrofitClient().create(apiCalls.class)
+        return getRetrofitClient().create(ApiCalls.class)
                 .getBookList()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -158,7 +172,7 @@ public class DataProvider {
     }
 
 
-    private Disposable addToDataBase(List<BookModel> books) {
+    private Disposable addToDataBase(List<Book> books) {
         if (dataListener != null) dataListener.onDataAvailable(books);
 
         ArrayList<ContentProviderOperation> cpo = new ArrayList<>();
@@ -171,7 +185,7 @@ public class DataProvider {
             deleteFromDb = false;
         }
 
-        for (BookModel book : books) {
+        for (Book book : books) {
             ContentValues values = new ContentValues();
             values.put(ItemsContract.Items.SERVER_ID, book.getId());
             values.put(ItemsContract.Items.AUTHOR, book.getAuthor());
@@ -228,5 +242,22 @@ public class DataProvider {
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .client(okHttpClient)
                 .build();
+    }
+
+    @SuppressLint("CheckResult")
+    public static void queryForBookList(@NonNull Context context,
+                                        @NonNull StaticDataListener listener) {
+        Uri uri = ItemsContract.Items.buildDirUri();
+        //noinspection ConstantConditions
+        Observable.just(context.getContentResolver().query(
+                uri,
+                PROJECTION,
+                null,
+                null,
+                ItemsContract.Items.DEFAULT_SORT))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(cursor -> listener.onQueryReturned(createListFromCursor(cursor)),
+                        e -> Log.e(TAG, "Error quering DB", e));
     }
 }

@@ -9,4 +9,9 @@
 
     <string name="up">Up</string>
 
+    <string name="error_no_network">No internet connection.</string>
+    <string name="error_time_out">Connection timed out.</string>
+
+    <string name="snack_retry">RETRY</string>
+
 </resources>
