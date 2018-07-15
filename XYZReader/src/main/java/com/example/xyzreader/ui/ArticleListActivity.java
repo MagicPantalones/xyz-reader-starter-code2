@@ -107,11 +107,13 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
         if (error == DataProvider.ErrorType.NO_NETWORK_CONNECTION) {
             errorSnack = Snackbar.make(mainContainer, getString(R.string.error_no_network),
                     Snackbar.LENGTH_INDEFINITE);
-        } else {
+        } else if (error == DataProvider.ErrorType.REQUEST_TIME_OUT){
             errorSnack = Snackbar.make(mainContainer, getString(R.string.error_time_out),
                     Snackbar.LENGTH_INDEFINITE);
         }
 
+
+        if (swipeRefreshLayout.isRefreshing()) swipeRefreshLayout.setRefreshing(false);
         errorSnack.setAction(R.string.snack_retry, v -> {
             if (errorSnack.isShown()) errorSnack.dismiss();
             dataProvider.refreshList();

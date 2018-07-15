@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import com.example.xyzreader.data.DataUtils;
 import com.example.xyzreader.data.ItemsContract;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -101,20 +102,16 @@ public class DataProvider {
     }
 
     public void dispose() {
-        dispose(dataFetchDisposable, dbQueryDisposable, dbInsertDisposable);
+        DataUtils.dispose(dataFetchDisposable, dbQueryDisposable, dbInsertDisposable);
     }
 
     public void refreshList() {
         deleteFromDb = true;
-        dispose(dataFetchDisposable);
+        DataUtils.dispose(dataFetchDisposable);
         dataFetchDisposable = fetchData();
     }
 
-    private void dispose(Disposable... disposables) {
-        for (Disposable disposable : disposables) {
-            if (disposable != null && disposable.isDisposed()) disposable.dispose();
-        }
-    }
+
 
 
     private Disposable queryDbForBooks() {

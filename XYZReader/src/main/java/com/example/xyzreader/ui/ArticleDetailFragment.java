@@ -6,16 +6,23 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.ShareCompat;
+import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.example.xyzreader.R;
+import com.example.xyzreader.data.DataUtils;
 import com.example.xyzreader.remote.Book;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import io.reactivex.Completable;
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 import ru.noties.markwon.Markwon;
 
 /**
@@ -32,6 +39,7 @@ public class ArticleDetailFragment extends Fragment {
     @BindView(R.id.article_body)
     TextView bodyView;
 
+    Disposable textFormatDisposable;
 
     public ArticleDetailFragment() {
         /*
@@ -62,8 +70,18 @@ public class ArticleDetailFragment extends Fragment {
                              Bundle savedInstanceState) {
         View mRootView = inflater.inflate(R.layout.fragment_article_detail, container, false);
         ButterKnife.bind(this, mRootView);
-        Markwon.setMarkdown(bodyView, book.getBody());
+
+        textFormatDisposable = Observable.just(Markwon.markdown(getContext(), book.getBody()))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(charSequence -> bodyView.setText(charSequence));
+
         return mRootView;
     }
 
+    @Override
+    public void onDetach() {
+        DataUtils.dispose(textFormatDisposable);
+        super.onDetach();
+    }
 }

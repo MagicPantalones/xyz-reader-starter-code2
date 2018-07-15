@@ -38,3 +38,4 @@ captures/
 
 # Keystore files
 *.jks
+/XYZReader/src/main/res/drawable/secondvariety.png

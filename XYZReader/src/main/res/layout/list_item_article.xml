@@ -29,9 +29,9 @@
             style="@style/TextAppearance.AppCompat.Subhead"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingStart="@dimen/normal_margin"
-            android:paddingTop="@dimen/normal_margin"
-            android:paddingEnd="@dimen/normal_margin"
+            android:paddingStart="@dimen/marg_16dp"
+            android:paddingTop="@dimen/marg_16dp"
+            android:paddingEnd="@dimen/marg_16dp"
             android:paddingBottom="4dp"
             android:ellipsize="end"
             android:maxLines="4" />

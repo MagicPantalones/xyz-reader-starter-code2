@@ -6,7 +6,10 @@
 
     <dimen name="fab_elevation">2dp</dimen>
     <dimen name="fab_press_translation_z">6dp</dimen>
-    <dimen name="fab_margin">24dp</dimen>
-    <dimen name="normal_margin">16dp</dimen>
+    <dimen name="fab_margin">@dimen/marg_24dp</dimen>
+    <dimen name="marg_8dp">8dp</dimen>
+    <dimen name="marg_16dp">16dp</dimen>
+    <dimen name="marg_24dp">24dp</dimen>
+    <dimen name="body_text_size">14sp</dimen>
 
 </resources>
