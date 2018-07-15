@@ -14,18 +14,22 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.app.ShareCompat;
+import android.support.v4.view.ViewCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.graphics.Palette;
 import android.support.v7.widget.Toolbar;
-import android.text.Html;
 import android.text.format.DateUtils;
+import android.transition.Slide;
+import android.transition.TransitionInflater;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.target.ImageViewTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.example.xyzreader.R;
@@ -56,7 +60,8 @@ public class ArticleDetailActivity extends AppCompatActivity {
 
     private static final String TAG = ArticleDetailActivity.class.getSimpleName();
 
-    private static final String KEY_POSITION = "position";
+    private static final String EXTRA_POSITION = "position";
+    private static final String EXTRA_IMG_TRANSITION_NAME = "imgTransName";
 
     @BindView(R.id.article_byline_detail)
     TextView bylineView;
@@ -76,6 +81,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
     private List<Book> books = new ArrayList<>();
     private int selectedPosition;
     private int defaultColor;
+    private String imgTransName;
 
 
     private MyPagerAdapter mPagerAdapter;
@@ -97,12 +103,15 @@ public class ArticleDetailActivity extends AppCompatActivity {
         setContentView(R.layout.activity_article_detail);
 
         unbinder = ButterKnife.bind(this);
+        supportPostponeEnterTransition();
+        postponeEnterTransition();
         defaultColor = DataUtils.SDK_V < 23 ?
                 getResources().getColor(R.color.colorPrimary) : getColor(R.color.colorPrimary);
 
         if (savedInstanceState == null &&
-                getIntent().getIntExtra(KEY_POSITION, -1) != -1) {
-            selectedPosition = getIntent().getIntExtra(KEY_POSITION, -1);
+                getIntent().getIntExtra(EXTRA_POSITION, -1) != -1) {
+            selectedPosition = getIntent().getIntExtra(EXTRA_POSITION, -1);
+            imgTransName = getIntent().getStringExtra(EXTRA_IMG_TRANSITION_NAME);
         }
 
         setSupportActionBar(toolbar);
@@ -121,6 +130,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
                     super.onPageSelected(position);
                     selectedPosition = position;
                     bindViews(books.get(selectedPosition));
+                    cacheNonVisiblePhotos();
                 }
             });
         });
@@ -151,31 +161,30 @@ public class ArticleDetailActivity extends AppCompatActivity {
         }
     }
 
+
     private void bindViews(Book book) {
         collapsingToolbar.setTitle(book.getTitle());
         Date publishedDate = parsePublishedDate(book);
-        if (!publishedDate.before(startOfEpoch.getTime())) {
-            bylineView.setText(Html.fromHtml(
-                    DateUtils.getRelativeTimeSpanString(
-                            publishedDate.getTime(),
-                            System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
-                            DateUtils.FORMAT_ABBREV_ALL).toString()
-                            + " by <font color='#ffffff'>"
-                            + book.getAuthor()
-                            + "</font>"));
 
+        if (!publishedDate.before(startOfEpoch.getTime())) {
+            bylineView.setText(String.format(getString(R.string.byline),
+                    DateUtils.getRelativeTimeSpanString(publishedDate.getTime(),
+                            System.currentTimeMillis(),
+                            DateUtils.HOUR_IN_MILLIS,
+                            DateUtils.FORMAT_ABBREV_ALL).toString(), book.getAuthor()));
         } else {
             // If date is before 1902, just show the string
-            bylineView.setText(Html.fromHtml(
-                    outputFormat.format(publishedDate) + " by <font color='#ffffff'>"
-                            + book.getAuthor()
-                            + "</font>"));
-
+            bylineView.setText(String.format(getString(R.string.byline),
+                    outputFormat.format(publishedDate),
+                    book.getAuthor()));
         }
+
+        ViewCompat.setTransitionName(photoView, imgTransName);
 
         GlideApp.with(photoView)
                 .load(book.getPhoto())
-                .apply(RequestOptions.centerCropTransform())
+                .dontAnimate()
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .into(new ImageViewTarget<Drawable>(photoView) {
                     @Override
                     protected void setResource(@Nullable Drawable resource) {
@@ -188,17 +197,35 @@ public class ArticleDetailActivity extends AppCompatActivity {
                         super.onResourceReady(resource, transition);
                         photoView.setImageDrawable(resource.getCurrent());
 
+
                         Bitmap bitmap = ((BitmapDrawable) resource).getBitmap();
                         paletteDisposable = Observable.just(Palette.from(bitmap).generate())
                                 .subscribeOn(Schedulers.io())
                                 .observeOn(AndroidSchedulers.mainThread())
-                                .subscribe(palette -> collapsingToolbar.setContentScrimColor(
-                                        palette.getDarkMutedColor(defaultColor)));
+                                .subscribe(palette -> {
+                                    collapsingToolbar.setContentScrimColor(
+                                            palette.getDarkMutedColor(defaultColor));
+                                    supportStartPostponedEnterTransition();
+                                });
                     }
                 });
 
     }
 
+    private void cacheNonVisiblePhotos() {
+
+        for (Book book : books) {
+            if (book.getId() == books.get(selectedPosition).getId()) continue;
+
+            GlideApp.with(this)
+                    .asBitmap()
+                    .load(book.getPhoto())
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .centerCrop()
+                    .preload();
+
+        }
+    }
 
     private class MyPagerAdapter extends FragmentStatePagerAdapter {
         MyPagerAdapter(FragmentManager fm) {

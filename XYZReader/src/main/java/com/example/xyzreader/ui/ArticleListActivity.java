@@ -1,16 +1,18 @@
 package com.example.xyzreader.ui;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityOptionsCompat;
+import android.support.v4.util.Pair;
+import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
-import android.text.Html;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.View;
@@ -19,7 +21,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.xyzreader.R;
-import com.example.xyzreader.data.ItemsContract;
 import com.example.xyzreader.remote.Book;
 import com.example.xyzreader.remote.DataProvider;
 import com.example.xyzreader.remote.GlideApp;
@@ -43,8 +44,8 @@ import butterknife.Unbinder;
  */
 public class ArticleListActivity extends AppCompatActivity implements DataProvider.DataListener {
 
-    private static final String KEY_BOOKS = "books";
-    private static final String KEY_POSITION = "position";
+    private static final String EXTRA_IMG_TRANSITION_NAME = "imgTransName";
+    private static final String EXTRA_POSITION = "position";
 
     private static final String TAG = ArticleListActivity.class.toString();
 
@@ -167,27 +168,29 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
             Date publishedDate = parsePublishedDate(position);
             if (!publishedDate.before(startOfEpoch.getTime())) {
 
-                holder.subtitleView.setText(Html.fromHtml(
+                holder.subtitleView.setText(String.format(getString(R.string.byline),
                         DateUtils.getRelativeTimeSpanString(
                                 publishedDate.getTime(),
                                 System.currentTimeMillis(),
                                 DateUtils.HOUR_IN_MILLIS,
-                                DateUtils.FORMAT_ABBREV_ALL)
-                                .toString()
-                                + "<br/>" + " by "
-                                + book.getAuthor()));
+                                DateUtils.FORMAT_ABBREV_ALL).toString(), book.getAuthor()));
             } else {
-                holder.subtitleView.setText(Html.fromHtml(
-                        outputFormat.format(publishedDate)
-                        + "<br/>" + " by "
-                        + book.getAuthor()));
+                holder.subtitleView.setText(String.format(getString(R.string.byline),
+                        outputFormat.format(publishedDate), book.getAuthor()));
             }
+
+            ViewCompat.setTransitionName(holder.thumbnailView, "thumb " + book.getId());
 
             holder.itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(ArticleListActivity.this,
                         ArticleDetailActivity.class);
-                intent.putExtra(KEY_POSITION, position);
-                startActivity(intent);
+                String thumbTransName = ViewCompat.getTransitionName(holder.thumbnailView);
+                intent.putExtra(EXTRA_POSITION, position);
+                intent.putExtra(EXTRA_IMG_TRANSITION_NAME, thumbTransName);
+                Pair<View, String> p1 = Pair.create(holder.thumbnailView, thumbTransName);
+                ActivityOptionsCompat options = ActivityOptionsCompat.makeSceneTransitionAnimation(
+                        ArticleListActivity.this, p1);
+                startActivity(intent, options.toBundle());
             });
 
             GlideApp.with(holder.thumbnailView)

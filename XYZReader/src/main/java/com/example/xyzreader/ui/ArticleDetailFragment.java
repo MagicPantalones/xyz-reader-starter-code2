@@ -71,7 +71,8 @@ public class ArticleDetailFragment extends Fragment {
         View mRootView = inflater.inflate(R.layout.fragment_article_detail, container, false);
         ButterKnife.bind(this, mRootView);
 
-        textFormatDisposable = Observable.just(Markwon.markdown(getContext(), book.getBody()))
+        textFormatDisposable = Observable.just(Markwon.markdown(getContext(),
+                book.getBody().substring(0, 1000)))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(charSequence -> bodyView.setText(charSequence));

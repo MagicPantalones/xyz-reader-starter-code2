@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<transitionSet xmlns:android="http://schemas.android.com/apk/res/android">
+    <autoTransition android:duration="300"
+        android:interpolator="@android:interpolator/fast_out_slow_in">
+        <targets android:targetId="@+id/photo_detail" android:excludeId="@+id/nested_scroll_view"/>
+    </autoTransition>
+    <slide android:duration="300"
+        android:interpolator="@android:interpolator/fast_out_slow_in"
+        android:slideEdge="bottom">
+        <targets android:targetId="@+id/pager"/>
+    </slide>
+</transitionSet>

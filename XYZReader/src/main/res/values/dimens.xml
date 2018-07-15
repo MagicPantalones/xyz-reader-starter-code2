@@ -11,5 +11,7 @@
     <dimen name="marg_16dp">16dp</dimen>
     <dimen name="marg_24dp">24dp</dimen>
     <dimen name="body_text_size">14sp</dimen>
+    <dimen name="title_margin_start">48dp</dimen>
+    <dimen name="title_margin_end">64dp</dimen>
 
 </resources>
