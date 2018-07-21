@@ -1,18 +1,31 @@
-<android.support.v4.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/scrollview"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:fillViewport="true"
+    android:clipChildren="false"
     android:clipToPadding="false"
-    android:paddingStart="@dimen/marg_16dp"
     android:paddingEnd="@dimen/marg_16dp"
-    app:layout_behavior="@string/appbar_scrolling_view_behavior">
+    android:paddingStart="@dimen/marg_16dp"
+    android:paddingTop="@dimen/marg_24dp">
 
-    <TextView
-        android:id="@+id/article_body"
+    <android.support.v4.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        style="@style/BodyText"/>
+        android:fillViewport="true">
 
-</android.support.v4.widget.NestedScrollView>
+        <TextView
+            android:id="@+id/article_body"
+            style="@style/BodyText"
+            android:visibility="invisible"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </android.support.v4.widget.NestedScrollView>
+
+    <ProgressBar
+        android:id="@+id/book_progress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/marg_24dp"
+        android:layout_gravity="center"/>
+
+</FrameLayout>

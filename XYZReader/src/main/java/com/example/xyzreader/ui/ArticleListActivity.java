@@ -16,6 +16,7 @@ import android.support.v7.widget.Toolbar;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -23,7 +24,7 @@ import android.widget.TextView;
 import com.example.xyzreader.R;
 import com.example.xyzreader.remote.Book;
 import com.example.xyzreader.remote.DataProvider;
-import com.example.xyzreader.remote.GlideApp;
+import com.example.xyzreader.utils.GlideApp;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -44,7 +45,6 @@ import butterknife.Unbinder;
  */
 public class ArticleListActivity extends AppCompatActivity implements DataProvider.DataListener {
 
-    private static final String EXTRA_IMG_TRANSITION_NAME = "imgTransName";
     private static final String EXTRA_POSITION = "position";
 
     private static final String TAG = ArticleListActivity.class.toString();
@@ -87,12 +87,10 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
         dataProvider.init();
         swipeRefreshLayout.setRefreshing(true);
 
-        bookListAdapter = new BookListAdapter();
-        bookListAdapter.setHasStableIds(true);
-        recyclerView.setAdapter(bookListAdapter);
         int columnCount = getResources().getInteger(R.integer.list_column_count);
         StaggeredGridLayoutManager sglm =
                 new StaggeredGridLayoutManager(columnCount, StaggeredGridLayoutManager.VERTICAL);
+        sglm.setGapStrategy(StaggeredGridLayoutManager.GAP_HANDLING_NONE);
         recyclerView.setLayoutManager(sglm);
     }
 
@@ -126,6 +124,10 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
 
     @Override
     public void onDataAvailable(List<Book> books) {
+        recyclerView.setAdapter(null);
+        bookListAdapter = new BookListAdapter();
+        bookListAdapter.setHasStableIds(true);
+        recyclerView.setAdapter(bookListAdapter);
         bookListAdapter.setBooks(books);
         if (swipeRefreshLayout.isRefreshing()) swipeRefreshLayout.setRefreshing(false);
         if (errorSnack != null && errorSnack.isShown()) errorSnack.dismiss();
@@ -134,19 +136,28 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
     private class BookListAdapter extends RecyclerView.Adapter<BookViewHolder> {
         private List<Book> books = new ArrayList<>();
 
+
         BookListAdapter() {}
 
         @Override
         public long getItemId(int position) {
-            Book book = books.get(position);
-            return book.getId();
+            return books.get(position).getId();
         }
 
         @NonNull
         @Override
         public BookViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             View view = getLayoutInflater().inflate(R.layout.list_item_article, parent, false);
-            return new BookViewHolder(view);
+            BookViewHolder vh = new BookViewHolder(view);
+
+            vh.itemView.setOnClickListener(v -> {
+                Intent intent = new Intent(ArticleListActivity.this,
+                        ArticleDetailActivity.class);
+                intent.putExtra(EXTRA_POSITION, vh.getAdapterPosition());
+                startActivity(intent);
+            });
+
+            return vh;
         }
 
         private Date parsePublishedDate(int position) {
@@ -165,6 +176,7 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
             Book book = books.get(position);
 
             holder.titleView.setText(book.getTitle());
+
             Date publishedDate = parsePublishedDate(position);
             if (!publishedDate.before(startOfEpoch.getTime())) {
 
@@ -179,20 +191,6 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
                         outputFormat.format(publishedDate), book.getAuthor()));
             }
 
-            ViewCompat.setTransitionName(holder.thumbnailView, "thumb " + book.getId());
-
-            holder.itemView.setOnClickListener(v -> {
-                Intent intent = new Intent(ArticleListActivity.this,
-                        ArticleDetailActivity.class);
-                String thumbTransName = ViewCompat.getTransitionName(holder.thumbnailView);
-                intent.putExtra(EXTRA_POSITION, position);
-                intent.putExtra(EXTRA_IMG_TRANSITION_NAME, thumbTransName);
-                Pair<View, String> p1 = Pair.create(holder.thumbnailView, thumbTransName);
-                ActivityOptionsCompat options = ActivityOptionsCompat.makeSceneTransitionAnimation(
-                        ArticleListActivity.this, p1);
-                startActivity(intent, options.toBundle());
-            });
-
             GlideApp.with(holder.thumbnailView)
                     .load(book.getThumb())
                     .into(holder.thumbnailView);
@@ -200,7 +198,6 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
 
         @Override
         public int getItemCount() { return books.size(); }
-
         void setBooks(List<Book> books) {
             this.books = books;
             notifyDataSetChanged();

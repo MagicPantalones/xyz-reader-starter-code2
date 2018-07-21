@@ -1,24 +1,26 @@
 package com.example.xyzreader.ui;
 
-import android.content.Intent;
-
+import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.ShareCompat;
-import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.example.xyzreader.R;
-import com.example.xyzreader.data.DataUtils;
+import com.example.xyzreader.remote.DataProvider;
+import com.example.xyzreader.utils.DataUtils;
 import com.example.xyzreader.remote.Book;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
@@ -32,14 +34,17 @@ import ru.noties.markwon.Markwon;
  */
 public class ArticleDetailFragment extends Fragment {
 
-    public static final String ARG_BOOK = "book";
+    public static final String ARG_BOOK_ID = "book_id";
+    private static final String TAG = ArticleDetailFragment.class.getSimpleName();
 
-    private Book book;
+    private int bookId;
 
     @BindView(R.id.article_body)
     TextView bodyView;
+    @BindView(R.id.book_progress)
+    ProgressBar progressBar;
 
-    Disposable textFormatDisposable;
+    Disposable detailDisposable;
 
     public ArticleDetailFragment() {
         /*
@@ -48,9 +53,9 @@ public class ArticleDetailFragment extends Fragment {
          */
     }
 
-    public static ArticleDetailFragment newInstance(Book book) {
+    public static ArticleDetailFragment newInstance(int position) {
         Bundle arguments = new Bundle();
-        arguments.putParcelable(ARG_BOOK, book);
+        arguments.putInt(ARG_BOOK_ID, position);
         ArticleDetailFragment fragment = new ArticleDetailFragment();
         fragment.setArguments(arguments);
         return fragment;
@@ -61,7 +66,7 @@ public class ArticleDetailFragment extends Fragment {
         super.onCreate(savedInstanceState);
 
         if (getArguments() != null) {
-            book = getArguments().getParcelable(ARG_BOOK);
+            bookId = getArguments().getInt(ARG_BOOK_ID);
         }
     }
 
@@ -71,18 +76,30 @@ public class ArticleDetailFragment extends Fragment {
         View mRootView = inflater.inflate(R.layout.fragment_article_detail, container, false);
         ButterKnife.bind(this, mRootView);
 
-        textFormatDisposable = Observable.just(Markwon.markdown(getContext(),
-                book.getBody().substring(0, 1000)))
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(charSequence -> bodyView.setText(charSequence));
+        DataProvider.queryOneBook(getContext(), bookId, this::startTextParsing);
 
         return mRootView;
     }
 
+    private void startTextParsing(List<Book> books) {
+        Book book = books.get(0);
+
+        detailDisposable = Observable.just(book.getBody())
+                .subscribeOn(Schedulers.io())
+                .flatMap(s -> Observable.just(Markwon.markdown(getContext(), s)))
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(this::bindViews, Throwable::printStackTrace);
+    }
+
+    private void bindViews(CharSequence sequence) {
+        bodyView.setText(sequence);
+        bodyView.setVisibility(View.VISIBLE);
+        progressBar.setVisibility(View.GONE);
+    }
+
     @Override
     public void onDetach() {
-        DataUtils.dispose(textFormatDisposable);
+        DataUtils.dispose(detailDisposable);
         super.onDetach();
     }
 }

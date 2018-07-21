@@ -7,36 +7,31 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.app.ShareCompat;
-import android.support.v4.view.ViewCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.graphics.Palette;
 import android.support.v7.widget.Toolbar;
 import android.text.format.DateUtils;
-import android.transition.Slide;
-import android.transition.TransitionInflater;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.View;
-import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.target.ImageViewTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.example.xyzreader.R;
-import com.example.xyzreader.data.DataUtils;
+import com.example.xyzreader.utils.DataUtils;
 import com.example.xyzreader.remote.Book;
 import com.example.xyzreader.remote.DataProvider;
-import com.example.xyzreader.remote.GlideApp;
+import com.example.xyzreader.utils.GlideApp;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -46,6 +41,7 @@ import java.util.GregorianCalendar;
 import java.util.List;
 
 import butterknife.BindView;
+import butterknife.BindViews;
 import butterknife.ButterKnife;
 import butterknife.Unbinder;
 import io.reactivex.Observable;
@@ -61,7 +57,6 @@ public class ArticleDetailActivity extends AppCompatActivity {
     private static final String TAG = ArticleDetailActivity.class.getSimpleName();
 
     private static final String EXTRA_POSITION = "position";
-    private static final String EXTRA_IMG_TRANSITION_NAME = "imgTransName";
 
     @BindView(R.id.article_byline_detail)
     TextView bylineView;
@@ -75,13 +70,10 @@ public class ArticleDetailActivity extends AppCompatActivity {
     Toolbar toolbar;
     @BindView(R.id.details_collapsing_tb_layout)
     CollapsingToolbarLayout collapsingToolbar;
-    @BindView(R.id.details_app_bar_layout)
-    AppBarLayout appBarLayout;
 
     private List<Book> books = new ArrayList<>();
     private int selectedPosition;
     private int defaultColor;
-    private String imgTransName;
 
 
     private MyPagerAdapter mPagerAdapter;
@@ -103,24 +95,23 @@ public class ArticleDetailActivity extends AppCompatActivity {
         setContentView(R.layout.activity_article_detail);
 
         unbinder = ButterKnife.bind(this);
-        supportPostponeEnterTransition();
-        postponeEnterTransition();
+
         defaultColor = DataUtils.SDK_V < 23 ?
                 getResources().getColor(R.color.colorPrimary) : getColor(R.color.colorPrimary);
 
         if (savedInstanceState == null &&
                 getIntent().getIntExtra(EXTRA_POSITION, -1) != -1) {
             selectedPosition = getIntent().getIntExtra(EXTRA_POSITION, -1);
-            imgTransName = getIntent().getStringExtra(EXTRA_IMG_TRANSITION_NAME);
         }
 
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        DataProvider.queryForBookList(this, list -> {
+        DataProvider.queryForBooks(this, list -> {
             books = list;
             bindViews(books.get(selectedPosition));
 
+            pager.setOffscreenPageLimit(0);
             mPagerAdapter = new MyPagerAdapter(getSupportFragmentManager());
             pager.setAdapter(mPagerAdapter);
             pager.setCurrentItem(selectedPosition);
@@ -130,7 +121,6 @@ public class ArticleDetailActivity extends AppCompatActivity {
                     super.onPageSelected(position);
                     selectedPosition = position;
                     bindViews(books.get(selectedPosition));
-                    cacheNonVisiblePhotos();
                 }
             });
         });
@@ -179,8 +169,6 @@ public class ArticleDetailActivity extends AppCompatActivity {
                     book.getAuthor()));
         }
 
-        ViewCompat.setTransitionName(photoView, imgTransName);
-
         GlideApp.with(photoView)
                 .load(book.getPhoto())
                 .dontAnimate()
@@ -202,29 +190,11 @@ public class ArticleDetailActivity extends AppCompatActivity {
                         paletteDisposable = Observable.just(Palette.from(bitmap).generate())
                                 .subscribeOn(Schedulers.io())
                                 .observeOn(AndroidSchedulers.mainThread())
-                                .subscribe(palette -> {
-                                    collapsingToolbar.setContentScrimColor(
-                                            palette.getDarkMutedColor(defaultColor));
-                                    supportStartPostponedEnterTransition();
-                                });
+                                .subscribe(palette -> collapsingToolbar.setContentScrimColor(
+                                        palette.getDarkMutedColor(defaultColor)));
                     }
                 });
 
-    }
-
-    private void cacheNonVisiblePhotos() {
-
-        for (Book book : books) {
-            if (book.getId() == books.get(selectedPosition).getId()) continue;
-
-            GlideApp.with(this)
-                    .asBitmap()
-                    .load(book.getPhoto())
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .centerCrop()
-                    .preload();
-
-        }
     }
 
     private class MyPagerAdapter extends FragmentStatePagerAdapter {
@@ -234,7 +204,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
 
         @Override
         public Fragment getItem(int position) {
-            return ArticleDetailFragment.newInstance(books.get(position));
+            return ArticleDetailFragment.newInstance(books.get(position).getId());
         }
 
         @Override

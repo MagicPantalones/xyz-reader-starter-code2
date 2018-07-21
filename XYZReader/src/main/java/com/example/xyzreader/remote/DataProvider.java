@@ -11,7 +11,7 @@ import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
-import com.example.xyzreader.data.DataUtils;
+import com.example.xyzreader.utils.DataUtils;
 import com.example.xyzreader.data.ItemsContract;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -165,7 +165,7 @@ public class DataProvider {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(books -> dbInsertDisposable = addToDataBase(books),
-                        e -> Log.e(TAG, "Error updating content.", e));
+                        e -> dataListener.onConnectionError(ErrorType.NO_NETWORK_CONNECTION));
     }
 
 
@@ -242,8 +242,8 @@ public class DataProvider {
     }
 
     @SuppressLint("CheckResult")
-    public static void queryForBookList(@NonNull Context context,
-                                        @NonNull StaticDataListener listener) {
+    public static void queryForBooks(@NonNull Context context,
+                                     @NonNull StaticDataListener listener) {
         Uri uri = ItemsContract.Items.buildDirUri();
         //noinspection ConstantConditions
         Observable.just(context.getContentResolver().query(
@@ -251,10 +251,26 @@ public class DataProvider {
                 PROJECTION,
                 null,
                 null,
-                ItemsContract.Items.DEFAULT_SORT))
+                null))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(cursor -> listener.onQueryReturned(createListFromCursor(cursor)),
                         e -> Log.e(TAG, "Error quering DB", e));
+    }
+
+    @SuppressLint("CheckResult")
+    public static void queryOneBook(Context context, int id, StaticDataListener listener) {
+
+        Uri uri = ItemsContract.Items.buildItemUri(id);
+        //noinspection ConstantConditions
+        Observable.just(context.getContentResolver().query(
+                uri,
+                PROJECTION,
+                null,
+                null,
+                null))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(cursor -> listener.onQueryReturned(createListFromCursor(cursor)));
     }
 }
