@@ -2,11 +2,16 @@ package com.example.xyzreader.ui;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.drawable.Animatable;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.TransitionDrawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
@@ -18,13 +23,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.graphics.Palette;
 import android.support.v7.widget.Toolbar;
 import android.text.format.DateUtils;
+import android.transition.Slide;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.target.ImageViewTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.example.xyzreader.R;
@@ -70,6 +76,8 @@ public class ArticleDetailActivity extends AppCompatActivity {
     Toolbar toolbar;
     @BindView(R.id.details_collapsing_tb_layout)
     CollapsingToolbarLayout collapsingToolbar;
+    @BindView(R.id.details_app_bar_layout)
+    AppBarLayout appBarLayout;
 
     private List<Book> books = new ArrayList<>();
     private int selectedPosition;
@@ -94,6 +102,10 @@ public class ArticleDetailActivity extends AppCompatActivity {
                         View.SYSTEM_UI_FLAG_LOW_PROFILE);
         setContentView(R.layout.activity_article_detail);
 
+        postponeEnterTransition();
+
+
+
         unbinder = ButterKnife.bind(this);
 
         defaultColor = DataUtils.SDK_V < 23 ?
@@ -111,7 +123,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
             books = list;
             bindViews(books.get(selectedPosition));
 
-            pager.setOffscreenPageLimit(0);
+            pager.setOffscreenPageLimit(1);
             mPagerAdapter = new MyPagerAdapter(getSupportFragmentManager());
             pager.setAdapter(mPagerAdapter);
             pager.setCurrentItem(selectedPosition);
@@ -169,29 +181,31 @@ public class ArticleDetailActivity extends AppCompatActivity {
                     book.getAuthor()));
         }
 
-        GlideApp.with(photoView)
+
+        GlideApp.with(this)
                 .load(book.getPhoto())
-                .dontAnimate()
-                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .transition(DrawableTransitionOptions.withCrossFade())
+                .skipMemoryCache(true)
                 .into(new ImageViewTarget<Drawable>(photoView) {
-                    @Override
-                    protected void setResource(@Nullable Drawable resource) {
-                        //Required overridden method.
-                    }
 
                     @Override
-                    public void onResourceReady(@NonNull Drawable resource,
-                                                @Nullable Transition<? super Drawable> transition) {
-                        super.onResourceReady(resource, transition);
-                        photoView.setImageDrawable(resource.getCurrent());
-
-
+                    public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
                         Bitmap bitmap = ((BitmapDrawable) resource).getBitmap();
                         paletteDisposable = Observable.just(Palette.from(bitmap).generate())
                                 .subscribeOn(Schedulers.io())
                                 .observeOn(AndroidSchedulers.mainThread())
-                                .subscribe(palette -> collapsingToolbar.setContentScrimColor(
-                                        palette.getDarkMutedColor(defaultColor)));
+                                .subscribe(palette -> {
+                                    int color = palette.getDarkMutedColor(defaultColor);
+                                    collapsingToolbar.setContentScrimColor(color);
+                                    appBarLayout.setBackgroundColor(color);
+                                    startPostponedEnterTransition();
+                                    super.onResourceReady(resource, transition);
+                                });
+                    }
+
+                    @Override
+                    protected void setResource(@Nullable Drawable resource) {
+                        //Required override
                     }
                 });
 

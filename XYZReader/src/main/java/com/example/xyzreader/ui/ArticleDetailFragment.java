@@ -4,7 +4,9 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
+import android.transition.Slide;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -45,6 +47,11 @@ public class ArticleDetailFragment extends Fragment {
     ProgressBar progressBar;
 
     Disposable detailDisposable;
+    LoadingListener listener;
+
+    public interface LoadingListener {
+        void onLoadComplete();
+    }
 
     public ArticleDetailFragment() {
         /*
@@ -77,14 +84,13 @@ public class ArticleDetailFragment extends Fragment {
         ButterKnife.bind(this, mRootView);
 
         DataProvider.queryOneBook(getContext(), bookId, this::startTextParsing);
-
         return mRootView;
     }
 
     private void startTextParsing(List<Book> books) {
         Book book = books.get(0);
 
-        detailDisposable = Observable.just(book.getBody())
+        detailDisposable = Observable.just(book.getBody().substring(0, 1000))
                 .subscribeOn(Schedulers.io())
                 .flatMap(s -> Observable.just(Markwon.markdown(getContext(), s)))
                 .observeOn(AndroidSchedulers.mainThread())
@@ -95,11 +101,19 @@ public class ArticleDetailFragment extends Fragment {
         bodyView.setText(sequence);
         bodyView.setVisibility(View.VISIBLE);
         progressBar.setVisibility(View.GONE);
+        if (listener != null) listener.onLoadComplete();
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        if (context instanceof LoadingListener) listener = (LoadingListener) context;
     }
 
     @Override
     public void onDetach() {
         DataUtils.dispose(detailDisposable);
+        listener = null;
         super.onDetach();
     }
 }

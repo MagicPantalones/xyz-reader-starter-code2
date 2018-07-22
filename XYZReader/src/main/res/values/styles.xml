@@ -21,15 +21,14 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:windowActivityTransitions">true</item>
         <item name="android:windowContentTransitions">true</item>
-        <item name="android:windowExitTransition">@android:transition/fade</item>
-        <item name="android:windowAllowEnterTransitionOverlap">true</item>
-        <item name="android:windowAllowReturnTransitionOverlap">true</item>
-        <item name="android:reparentWithOverlay">true</item>
+        <item name="android:windowExitTransition">@transition/main_exit_transition</item>
     </style>
 
     <style name="Theme.Bacon.Detail">
         <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowEnterTransition">@transition/detail_enter_transition</item>
     </style>
 
     <style name="BodyText">

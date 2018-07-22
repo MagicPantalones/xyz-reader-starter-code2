@@ -1,22 +1,22 @@
 package com.example.xyzreader.ui;
 
-import android.app.Activity;
+import android.app.ActivityOptions;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityOptionsCompat;
-import android.support.v4.util.Pair;
-import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.text.format.DateUtils;
+import android.transition.Slide;
+import android.transition.Transition;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -92,6 +92,7 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
                 new StaggeredGridLayoutManager(columnCount, StaggeredGridLayoutManager.VERTICAL);
         sglm.setGapStrategy(StaggeredGridLayoutManager.GAP_HANDLING_NONE);
         recyclerView.setLayoutManager(sglm);
+
     }
 
     @Override
@@ -131,6 +132,7 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
         bookListAdapter.setBooks(books);
         if (swipeRefreshLayout.isRefreshing()) swipeRefreshLayout.setRefreshing(false);
         if (errorSnack != null && errorSnack.isShown()) errorSnack.dismiss();
+
     }
 
     private class BookListAdapter extends RecyclerView.Adapter<BookViewHolder> {
@@ -151,10 +153,12 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
             BookViewHolder vh = new BookViewHolder(view);
 
             vh.itemView.setOnClickListener(v -> {
+
                 Intent intent = new Intent(ArticleListActivity.this,
                         ArticleDetailActivity.class);
                 intent.putExtra(EXTRA_POSITION, vh.getAdapterPosition());
-                startActivity(intent);
+                startActivity(intent, ActivityOptions
+                        .makeSceneTransitionAnimation(ArticleListActivity.this).toBundle());
             });
 
             return vh;
