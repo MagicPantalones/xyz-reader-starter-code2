@@ -1,6 +1,5 @@
 package com.example.xyzreader.remote;
 
-import android.annotation.SuppressLint;
 import android.content.ContentProviderOperation;
 import android.content.ContentValues;
 import android.content.Context;
@@ -8,7 +7,6 @@ import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
-import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.example.xyzreader.utils.DataUtils;
@@ -54,6 +52,8 @@ public class DataProvider {
             ItemsContract.Items.BODY,
     };
 
+
+
     private static final int _ID = 0;
     private static final int TITLE = 1;
     private static final int PUBLISHED_DATE = 2;
@@ -80,10 +80,6 @@ public class DataProvider {
     public interface DataListener {
         void onConnectionError(ErrorType error);
         void onDataAvailable(List<Book> books);
-    }
-
-    public interface StaticDataListener {
-        void onQueryReturned(List<Book> books);
     }
 
     interface ApiCalls {
@@ -239,38 +235,5 @@ public class DataProvider {
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .client(okHttpClient)
                 .build();
-    }
-
-    @SuppressLint("CheckResult")
-    public static void queryForBooks(@NonNull Context context,
-                                     @NonNull StaticDataListener listener) {
-        Uri uri = ItemsContract.Items.buildDirUri();
-        //noinspection ConstantConditions
-        Observable.just(context.getContentResolver().query(
-                uri,
-                PROJECTION,
-                null,
-                null,
-                null))
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(cursor -> listener.onQueryReturned(createListFromCursor(cursor)),
-                        e -> Log.e(TAG, "Error quering DB", e));
-    }
-
-    @SuppressLint("CheckResult")
-    public static void queryOneBook(Context context, int id, StaticDataListener listener) {
-
-        Uri uri = ItemsContract.Items.buildItemUri(id);
-        //noinspection ConstantConditions
-        Observable.just(context.getContentResolver().query(
-                uri,
-                PROJECTION,
-                null,
-                null,
-                null))
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(cursor -> listener.onQueryReturned(createListFromCursor(cursor)));
     }
 }

@@ -16,4 +16,6 @@
 
     <string name="byline">%1$s by %2$s</string>
 
+    <string name="page_num">%1$d.</string>
+
 </resources>

@@ -5,17 +5,13 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
-import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.text.format.DateUtils;
-import android.transition.Slide;
-import android.transition.Transition;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -23,6 +19,7 @@ import android.widget.TextView;
 
 import com.example.xyzreader.R;
 import com.example.xyzreader.remote.Book;
+import com.example.xyzreader.remote.BookCover;
 import com.example.xyzreader.remote.DataProvider;
 import com.example.xyzreader.utils.GlideApp;
 
@@ -46,6 +43,7 @@ import butterknife.Unbinder;
 public class ArticleListActivity extends AppCompatActivity implements DataProvider.DataListener {
 
     private static final String EXTRA_POSITION = "position";
+    private static final String EXTRA_COVERS = "covers";
 
     private static final String TAG = ArticleListActivity.class.toString();
 
@@ -137,7 +135,7 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
 
     private class BookListAdapter extends RecyclerView.Adapter<BookViewHolder> {
         private List<Book> books = new ArrayList<>();
-
+        private List<BookCover> bookCovers = new ArrayList<>();
 
         BookListAdapter() {}
 
@@ -153,10 +151,9 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
             BookViewHolder vh = new BookViewHolder(view);
 
             vh.itemView.setOnClickListener(v -> {
-
                 Intent intent = new Intent(ArticleListActivity.this,
                         ArticleDetailActivity.class);
-                intent.putExtra(EXTRA_POSITION, vh.getAdapterPosition());
+                intent.putExtra(EXTRA_COVERS, bookCovers.get(vh.getAdapterPosition()));
                 startActivity(intent, ActivityOptions
                         .makeSceneTransitionAnimation(ArticleListActivity.this).toBundle());
             });
@@ -202,8 +199,19 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
 
         @Override
         public int getItemCount() { return books.size(); }
+
         void setBooks(List<Book> books) {
             this.books = books;
+            bookCovers = new ArrayList<>();
+            for (Book book : books) {
+                BookCover bc = new BookCover();
+                bc.setId(book.getId());
+                bc.setAuthor(book.getAuthor());
+                bc.setTitle(book.getTitle());
+                bc.setPhoto(book.getPhoto());
+                bc.setPublished_date(book.getPublished_date());
+                bookCovers.add(bc);
+            }
             notifyDataSetChanged();
         }
     }

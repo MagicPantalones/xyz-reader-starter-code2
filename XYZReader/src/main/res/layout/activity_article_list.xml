@@ -5,6 +5,7 @@
     android:id="@+id/main_container">
 
     <LinearLayout
+        android:id="@+id/list_toolbar_wrapper"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">

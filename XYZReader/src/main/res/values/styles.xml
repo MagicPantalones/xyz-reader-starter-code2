@@ -36,6 +36,12 @@
         <item name="android:textSize">@dimen/body_text_size</item>
     </style>
 
+    <style name="FooterText">
+        <item name="android:textSize">@dimen/body_text_size</item>
+        <item name="android:alpha">0.7</item>
+        <item name="android:textAlignment">center</item>
+    </style>
+
     <style name="TitleAppearance" parent="TextAppearance.AppCompat.Title"/>
 
 </resources>

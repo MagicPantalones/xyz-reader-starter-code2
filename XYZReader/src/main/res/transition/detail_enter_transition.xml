@@ -5,10 +5,15 @@
 
     <slide android:slideEdge="bottom">
         <targets>
-            <target android:targetId="@+id/pager_wrapper"/>
+            <target android:excludeId="@+id/details_app_bar_layout"/>
+            <target android:excludeId="@android:id/statusBarBackground" />
         </targets>
     </slide>
 
-    <fade/>
-
+    <slide android:slideEdge="top">
+        <targets>
+            <target android:targetId="@+id/details_app_bar_layout"/>
+            <target android:excludeId="@android:id/statusBarBackground" />
+        </targets>
+    </slide>
 </transitionSet>

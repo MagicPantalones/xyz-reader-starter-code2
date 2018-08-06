@@ -73,7 +73,10 @@
             android:layout_height="wrap_content"
             android:clipChildren="false"
             android:clipToPadding="false"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
+            android:paddingTop="@dimen/marg_24dp"
+            android:padding="@dimen/marg_16dp"
+
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
     </android.support.v4.widget.NestedScrollView>
 
@@ -85,6 +88,7 @@
         android:layout_marginEnd="@dimen/fab_margin"
         android:contentDescription="@string/action_share"
         android:src="@drawable/ic_share"
+        android:visibility="gone"
         app:fabSize="normal"
         app:layout_anchor="@id/details_app_bar_layout"
         app:layout_anchorGravity="bottom|end|right" />

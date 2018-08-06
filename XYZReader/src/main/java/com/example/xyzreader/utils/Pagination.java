@@ -1,11 +1,18 @@
 package com.example.xyzreader.utils;
 
+import android.content.Context;
+import android.graphics.Rect;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+import android.view.View;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import ru.noties.markwon.Markwon;
+import ru.noties.markwon.SpannableConfiguration;
 
 public class Pagination {
 
@@ -18,28 +25,30 @@ public class Pagination {
     private final TextPaint mPaint;
     private final List<CharSequence> mPages;
 
-    public Pagination(CharSequence text, int pageW, int pageH, TextPaint paint, float spacingMult, float spacingAdd, boolean inclidePad) {
+    public Pagination(CharSequence text, TextView view) {
+        Rect rect = new Rect();
+        view.getGlobalVisibleRect(rect);
         this.mText = text;
-        this.mWidth = pageW;
-        this.mHeight = pageH;
-        this.mPaint = paint;
-        this.mSpacingMult = spacingMult;
-        this.mSpacingAdd = spacingAdd;
-        this.mIncludePad = inclidePad;
+        this.mWidth = view.getMeasuredWidth();
+        this.mHeight = rect.height() != 0 ? rect.height() : view.getMeasuredHeight();
+        this.mPaint = view.getPaint();
+        this.mSpacingMult = view.getLineSpacingMultiplier();
+        this.mSpacingAdd = view.getLineSpacingExtra();
+        this.mIncludePad = view.getIncludeFontPadding();
         this.mPages = new ArrayList<>();
-
         layout();
     }
 
     private void layout() {
-        final StaticLayout layout = new StaticLayout(mText, mPaint, mWidth, Layout.Alignment.ALIGN_NORMAL, mSpacingMult, mSpacingAdd, mIncludePad);
-
+        final StaticLayout layout = new StaticLayout(mText, mPaint, mWidth,
+                Layout.Alignment.ALIGN_NORMAL, mSpacingMult, mSpacingAdd, mIncludePad);
         final int lines = layout.getLineCount();
         final CharSequence text = layout.getText();
         int startOffset = 0;
         int height = mHeight;
 
         for (int i = 0; i < lines; i++) {
+
             if (height < layout.getLineBottom(i)) {
                 // When the layout height has been exceeded
                 addPage(text.subSequence(startOffset, layout.getLineStart(i)));

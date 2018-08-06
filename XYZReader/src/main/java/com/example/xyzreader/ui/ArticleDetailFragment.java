@@ -1,32 +1,25 @@
 package com.example.xyzreader.ui;
 
-import android.content.Context;
+import android.arch.lifecycle.Observer;
+import android.arch.lifecycle.ViewModelProviders;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.transition.Slide;
-import android.util.Log;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.MeasureSpec;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.example.xyzreader.R;
-import com.example.xyzreader.remote.DataProvider;
-import com.example.xyzreader.utils.DataUtils;
-import com.example.xyzreader.remote.Book;
-
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
+import com.example.xyzreader.data.BodyViewModel;
+import com.example.xyzreader.utils.Pagination;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import io.reactivex.Observable;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.Disposable;
-import io.reactivex.schedulers.Schedulers;
 import ru.noties.markwon.Markwon;
 
 /**
@@ -36,21 +29,25 @@ import ru.noties.markwon.Markwon;
  */
 public class ArticleDetailFragment extends Fragment {
 
-    public static final String ARG_BOOK_ID = "book_id";
     private static final String TAG = ArticleDetailFragment.class.getSimpleName();
 
-    private int bookId;
+    private static final String ARG_PAGE_NUM = "page_num";
+
+    private int pageNum;
 
     @BindView(R.id.article_body)
     TextView bodyView;
     @BindView(R.id.book_progress)
     ProgressBar progressBar;
+    @BindView(R.id.page_num)
+    TextView pageNumView;
 
-    Disposable detailDisposable;
-    LoadingListener listener;
+    BodyViewModel viewModel;
+    Observer<Pagination> observer;
+    FragMeasureListener measureListener;
 
-    public interface LoadingListener {
-        void onLoadComplete();
+    public interface FragMeasureListener {
+        void onPageLaidOut(TextView measuredView);
     }
 
     public ArticleDetailFragment() {
@@ -60,9 +57,9 @@ public class ArticleDetailFragment extends Fragment {
          */
     }
 
-    public static ArticleDetailFragment newInstance(int position) {
+    public static ArticleDetailFragment newInstance(int pageNum) {
         Bundle arguments = new Bundle();
-        arguments.putInt(ARG_BOOK_ID, position);
+        arguments.putInt(ARG_PAGE_NUM, pageNum);
         ArticleDetailFragment fragment = new ArticleDetailFragment();
         fragment.setArguments(arguments);
         return fragment;
@@ -73,7 +70,7 @@ public class ArticleDetailFragment extends Fragment {
         super.onCreate(savedInstanceState);
 
         if (getArguments() != null) {
-            bookId = getArguments().getInt(ARG_BOOK_ID);
+            pageNum = getArguments().getInt(ARG_PAGE_NUM);
         }
     }
 
@@ -83,37 +80,56 @@ public class ArticleDetailFragment extends Fragment {
         View mRootView = inflater.inflate(R.layout.fragment_article_detail, container, false);
         ButterKnife.bind(this, mRootView);
 
-        DataProvider.queryOneBook(getContext(), bookId, this::startTextParsing);
+        pageNumView.setText(String.format(getString(R.string.page_num), pageNum + 1));
+
+        viewModel = ViewModelProviders.of(getActivity()).get(BodyViewModel.class);
+
+        if (measureListener != null) {
+            bodyView.getViewTreeObserver().addOnGlobalLayoutListener(
+                    new ViewTreeObserver.OnGlobalLayoutListener() {
+                        @Override
+                        public void onGlobalLayout() {
+                            bodyView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                            bodyView.measure(MeasureSpec.EXACTLY, MeasureSpec.EXACTLY);
+                            measureListener.onPageLaidOut(bodyView);
+                            measureListener = null;
+                        }
+                    });
+        }
+
         return mRootView;
     }
 
-    private void startTextParsing(List<Book> books) {
-        Book book = books.get(0);
-
-        detailDisposable = Observable.just(book.getBody().substring(0, 1000))
-                .subscribeOn(Schedulers.io())
-                .flatMap(s -> Observable.just(Markwon.markdown(getContext(), s)))
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(this::bindViews, Throwable::printStackTrace);
-    }
-
-    private void bindViews(CharSequence sequence) {
-        bodyView.setText(sequence);
-        bodyView.setVisibility(View.VISIBLE);
-        progressBar.setVisibility(View.GONE);
-        if (listener != null) listener.onLoadComplete();
-    }
-
     @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        if (context instanceof LoadingListener) listener = (LoadingListener) context;
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        boolean isLandscape = view.getResources().getBoolean(R.bool.isLandscape);
+        if (viewModel.getPage(pageNum, isLandscape) != null) {
+            setPageText(viewModel.getPage(pageNum, isLandscape));
+        } else {
+            observer = pagination -> setPageText(pagination.get(pageNum));
+            viewModel.registerObserver(getActivity(), observer, isLandscape);
+        }
     }
 
     @Override
     public void onDetach() {
-        DataUtils.dispose(detailDisposable);
-        listener = null;
+        if (observer != null) viewModel.unregisterObserver(observer);
         super.onDetach();
     }
+
+    public void setPageText(CharSequence pageText){
+        Markwon.setText(bodyView, pageText);
+        hideLoader();
+    }
+
+    private void hideLoader(){
+        bodyView.setVisibility(View.VISIBLE);
+        progressBar.setVisibility(View.GONE);
+    }
+
+    public void setListener(FragMeasureListener listener) {
+        this.measureListener = listener;
+    }
+
 }
