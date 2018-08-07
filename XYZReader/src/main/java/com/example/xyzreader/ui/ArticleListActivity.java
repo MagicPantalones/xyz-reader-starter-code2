@@ -42,7 +42,6 @@ import butterknife.Unbinder;
  */
 public class ArticleListActivity extends AppCompatActivity implements DataProvider.DataListener {
 
-    private static final String EXTRA_POSITION = "position";
     private static final String EXTRA_COVERS = "covers";
 
     private static final String TAG = ArticleListActivity.class.toString();
@@ -101,7 +100,7 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
     }
 
     @Override
-    public void onConnectionError(DataProvider.ErrorType error) {
+    public void onConnectionError(DataProvider.ErrorType error, Throwable throwable) {
         if (error == DataProvider.ErrorType.NO_NETWORK_CONNECTION) {
             errorSnack = Snackbar.make(mainContainer, getString(R.string.error_no_network),
                     Snackbar.LENGTH_INDEFINITE);
@@ -110,6 +109,9 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
                     Snackbar.LENGTH_INDEFINITE);
         }
 
+        if (throwable != null) {
+            Log.e(TAG, "Connection error: ", throwable);
+        }
 
         if (swipeRefreshLayout.isRefreshing()) swipeRefreshLayout.setRefreshing(false);
         errorSnack.setAction(R.string.snack_retry, v -> {
@@ -122,26 +124,25 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
     }
 
     @Override
-    public void onDataAvailable(List<Book> books) {
+    public void onDataAvailable(List<BookCover> bookCovers) {
         recyclerView.setAdapter(null);
         bookListAdapter = new BookListAdapter();
         bookListAdapter.setHasStableIds(true);
         recyclerView.setAdapter(bookListAdapter);
-        bookListAdapter.setBooks(books);
+        bookListAdapter.setBooks(bookCovers);
         if (swipeRefreshLayout.isRefreshing()) swipeRefreshLayout.setRefreshing(false);
         if (errorSnack != null && errorSnack.isShown()) errorSnack.dismiss();
 
     }
 
     private class BookListAdapter extends RecyclerView.Adapter<BookViewHolder> {
-        private List<Book> books = new ArrayList<>();
         private List<BookCover> bookCovers = new ArrayList<>();
 
         BookListAdapter() {}
 
         @Override
         public long getItemId(int position) {
-            return books.get(position).getId();
+            return bookCovers.get(position).getId();
         }
 
         @NonNull
@@ -163,7 +164,7 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
 
         private Date parsePublishedDate(int position) {
             try {
-                String date = books.get(position).getPublished_date();
+                String date = bookCovers.get(position).getPublishedDate();
                 return dateFormat.parse(date);
             } catch (ParseException ex) {
                 Log.e(TAG, ex.getMessage());
@@ -174,9 +175,9 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
 
         @Override
         public void onBindViewHolder(@NonNull BookViewHolder holder, int position) {
-            Book book = books.get(position);
+            BookCover bookCover = bookCovers.get(position);
 
-            holder.titleView.setText(book.getTitle());
+            holder.titleView.setText(bookCover.getTitle());
 
             Date publishedDate = parsePublishedDate(position);
             if (!publishedDate.before(startOfEpoch.getTime())) {
@@ -186,32 +187,22 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
                                 publishedDate.getTime(),
                                 System.currentTimeMillis(),
                                 DateUtils.HOUR_IN_MILLIS,
-                                DateUtils.FORMAT_ABBREV_ALL).toString(), book.getAuthor()));
+                                DateUtils.FORMAT_ABBREV_ALL).toString(), bookCover.getAuthor()));
             } else {
                 holder.subtitleView.setText(String.format(getString(R.string.byline),
-                        outputFormat.format(publishedDate), book.getAuthor()));
+                        outputFormat.format(publishedDate), bookCover.getAuthor()));
             }
 
             GlideApp.with(holder.thumbnailView)
-                    .load(book.getThumb())
+                    .load(bookCover.getThumb())
                     .into(holder.thumbnailView);
         }
 
         @Override
-        public int getItemCount() { return books.size(); }
+        public int getItemCount() { return bookCovers.size(); }
 
-        void setBooks(List<Book> books) {
-            this.books = books;
-            bookCovers = new ArrayList<>();
-            for (Book book : books) {
-                BookCover bc = new BookCover();
-                bc.setId(book.getId());
-                bc.setAuthor(book.getAuthor());
-                bc.setTitle(book.getTitle());
-                bc.setPhoto(book.getPhoto());
-                bc.setPublished_date(book.getPublished_date());
-                bookCovers.add(bc);
-            }
+        void setBooks(List<BookCover> bookCovers) {
+            this.bookCovers = bookCovers;
             notifyDataSetChanged();
         }
     }

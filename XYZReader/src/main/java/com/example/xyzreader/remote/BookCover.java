@@ -9,7 +9,8 @@ public class BookCover implements Parcelable{
     private String title;
     private String author;
     private String photo;
-    private String published_date;
+    private String thumb;
+    private String publishedDate;
 
     public static final Parcelable.Creator<BookCover> CREATOR = new Creator<BookCover>() {
         @Override
@@ -28,7 +29,8 @@ public class BookCover implements Parcelable{
         this.title = (String) in.readValue(String.class.getClassLoader());
         this.author = (String) in.readValue(String.class.getClassLoader());
         this.photo = (String) in.readValue(String.class.getClassLoader());
-        this.published_date = (String) in.readValue(String.class.getClassLoader());
+        this.thumb = (String) in.readValue(String.class.getClassLoader());
+        this.publishedDate = (String) in.readValue(String.class.getClassLoader());
     }
 
     public BookCover() {
@@ -46,8 +48,11 @@ public class BookCover implements Parcelable{
     public String getPhoto() { return photo; }
     public void setPhoto(String photo) { this.photo = photo; }
 
-    public String getPublished_date() { return published_date; }
-    public void setPublished_date(String published_date) { this.published_date = published_date; }
+    public String getThumb() { return thumb; }
+    public void setThumb(String thumb) { this.thumb = thumb; }
+
+    public String getPublishedDate() { return publishedDate; }
+    public void setPublishedDate(String publishedDate) { this.publishedDate = publishedDate; }
 
     @Override
     public int describeContents() {
@@ -60,6 +65,7 @@ public class BookCover implements Parcelable{
         dest.writeValue(title);
         dest.writeValue(author);
         dest.writeValue(photo);
-        dest.writeValue(published_date);
+        dest.writeValue(thumb);
+        dest.writeValue(publishedDate);
     }
 }

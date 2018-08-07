@@ -1,6 +1,7 @@
 <android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/detail_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true">
@@ -60,25 +61,43 @@
         </android.support.design.widget.CollapsingToolbarLayout>
     </android.support.design.widget.AppBarLayout>
 
-    <android.support.v4.widget.NestedScrollView
-        android:id="@+id/pager_wrapper"
+    <android.support.v7.widget.CardView
+        android:id="@+id/article_wrapper"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fillViewport="true"
+        android:layout_marginBottom="@dimen/marg_8dp"
+        android:layout_marginEnd="@dimen/marg_8dp"
+        android:layout_marginStart="@dimen/marg_8dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        app:contentPadding="@dimen/marg_8dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <android.support.v4.view.ViewPager
-            android:id="@+id/pager"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:clipChildren="false"
-            android:clipToPadding="false"
-            android:paddingTop="@dimen/marg_24dp"
-            android:padding="@dimen/marg_16dp"
+            android:layout_height="match_parent">
 
-            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/text_recycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:paddingEnd="@dimen/marg_8dp"
+                android:paddingStart="@dimen/marg_8dp"
+                android:paddingTop="@dimen/marg_16dp"
+                app:layoutManager="android.support.v7.widget.LinearLayoutManager"
+                android:visibility="gone"/>
 
-    </android.support.v4.widget.NestedScrollView>
+            <ProgressBar
+                android:id="@+id/text_loader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/marg_24dp"
+                android:layout_gravity="center_horizontal"/>
+
+        </FrameLayout>
+    </android.support.v7.widget.CardView>
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/share_fab"
@@ -88,7 +107,7 @@
         android:layout_marginEnd="@dimen/fab_margin"
         android:contentDescription="@string/action_share"
         android:src="@drawable/ic_share"
-        android:visibility="gone"
+        android:visibility="visible"
         app:fabSize="normal"
         app:layout_anchor="@id/details_app_bar_layout"
         app:layout_anchorGravity="bottom|end|right" />

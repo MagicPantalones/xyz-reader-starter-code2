@@ -11,6 +11,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
+import android.support.annotation.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,6 +80,28 @@ public class ItemsProvider extends ContentProvider {
 				throw new UnsupportedOperationException("Unknown uri: " + uri);
 			}
 		}
+	}
+
+	@Override
+	public int bulkInsert(@NonNull Uri uri, @NonNull ContentValues[] values) {
+		final SQLiteDatabase db = mOpenHelper.getWritableDatabase();
+		int numRowsInserted = 0;
+        db.beginTransaction();
+		try {
+			for (ContentValues val : values) {
+				long id = db.insert(Tables.ITEMS, null, val);
+				if (id != -1) numRowsInserted++;
+			}
+			db.setTransactionSuccessful();
+		} finally {
+			db.endTransaction();
+		}
+
+		if (getContext() != null){
+			getContext().getContentResolver().notifyChange(uri, null);
+		}
+
+		return numRowsInserted;
 	}
 
 	@Override

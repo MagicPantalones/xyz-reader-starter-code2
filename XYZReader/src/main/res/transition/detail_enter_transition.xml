@@ -7,6 +7,7 @@
         <targets>
             <target android:excludeId="@+id/details_app_bar_layout"/>
             <target android:excludeId="@android:id/statusBarBackground" />
+            <target android:targetId="@+id/article_wrapper"/>
         </targets>
     </slide>
 

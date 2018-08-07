@@ -1,12 +1,12 @@
 package com.example.xyzreader.remote;
 
-import android.content.ContentProviderOperation;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.example.xyzreader.utils.DataUtils;
@@ -15,6 +15,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.util.ArrayList;
@@ -49,10 +50,7 @@ public class DataProvider {
             ItemsContract.Items.THUMB_URL,
             ItemsContract.Items.PHOTO_URL,
             ItemsContract.Items.ASPECT_RATIO,
-            ItemsContract.Items.BODY,
     };
-
-
 
     private static final int _ID = 0;
     private static final int TITLE = 1;
@@ -60,8 +58,6 @@ public class DataProvider {
     private static final int AUTHOR = 3;
     private static final int THUMB_URL = 4;
     private static final int PHOTO_URL = 5;
-    private static final int ASPECT_RATIO = 6;
-    private static final int BODY = 7;
 
     private final Context context;
     private DataListener dataListener;
@@ -70,7 +66,6 @@ public class DataProvider {
     private Disposable dataFetchDisposable;
     private Disposable dbInsertDisposable;
 
-    private boolean deleteFromDb = false;
 
     public enum ErrorType {
         REQUEST_TIME_OUT,
@@ -78,8 +73,8 @@ public class DataProvider {
     }
 
     public interface DataListener {
-        void onConnectionError(ErrorType error);
-        void onDataAvailable(List<Book> books);
+        void onConnectionError(ErrorType error, @Nullable Throwable throwable);
+        void onDataAvailable(List<BookCover> books);
     }
 
     interface ApiCalls {
@@ -102,9 +97,7 @@ public class DataProvider {
     }
 
     public void refreshList() {
-        deleteFromDb = true;
-        DataUtils.dispose(dataFetchDisposable);
-        dataFetchDisposable = fetchData();
+        deleteFromDb();
     }
 
 
@@ -126,28 +119,26 @@ public class DataProvider {
     }
 
     private void handleDbResponse(Cursor cursor) {
-        List<Book> books = createListFromCursor(cursor);
-        if (dataListener != null && !books.isEmpty()) {
-            dataListener.onDataAvailable(books);
+        List<BookCover> bookCovers = createListFromCursor(cursor);
+        if (dataListener != null && !bookCovers.isEmpty()) {
+            dataListener.onDataAvailable(bookCovers);
         } else if (isInternetConnected()){
             dataFetchDisposable = fetchData();
         }
     }
 
-    private static List<Book> createListFromCursor(Cursor cursor) {
-        List<Book> books = new ArrayList<>();
+    private static List<BookCover> createListFromCursor(Cursor cursor) {
+        List<BookCover> books = new ArrayList<>();
         if (cursor != null && cursor.getCount() > 0) {
             while (cursor.moveToNext()) {
-                Book book = new Book();
-                book.setId(cursor.getInt(_ID));
-                book.setTitle(cursor.getString(TITLE));
-                book.setAuthor(cursor.getString(AUTHOR));
-                book.setBody(cursor.getString(BODY));
-                book.setThumb(cursor.getString(THUMB_URL));
-                book.setPhoto(cursor.getString(PHOTO_URL));
-                book.setAspect_ratio(cursor.getFloat(ASPECT_RATIO));
-                book.setPublished_date(cursor.getString(PUBLISHED_DATE));
-                books.add(book);
+                BookCover bookCover = new BookCover();
+                bookCover.setId(cursor.getInt(_ID));
+                bookCover.setTitle(cursor.getString(TITLE));
+                bookCover.setAuthor(cursor.getString(AUTHOR));
+                bookCover.setThumb(cursor.getString(THUMB_URL));
+                bookCover.setPhoto(cursor.getString(PHOTO_URL));
+                bookCover.setPublishedDate(cursor.getString(PUBLISHED_DATE));
+                books.add(bookCover);
             }
             cursor.close();
         }
@@ -160,24 +151,22 @@ public class DataProvider {
                 .getBookList()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(books -> dbInsertDisposable = addToDataBase(books),
-                        e -> dataListener.onConnectionError(ErrorType.NO_NETWORK_CONNECTION));
+                .subscribe(this::handleFetchSuccess,
+                        e -> dataListener.onConnectionError(ErrorType.NO_NETWORK_CONNECTION, e));
+    }
+
+    private void handleFetchSuccess(List<Book> books) {
+        dbInsertDisposable = addToDataBase(books);
     }
 
 
     private Disposable addToDataBase(List<Book> books) {
-        if (dataListener != null) dataListener.onDataAvailable(books);
 
-        ArrayList<ContentProviderOperation> cpo = new ArrayList<>();
+        ContentValues[] cv = new ContentValues[books.size()];
 
         Uri dirUri = ItemsContract.Items.buildDirUri();
 
-        if (deleteFromDb) {
-            // Delete all items
-            cpo.add(ContentProviderOperation.newDelete(dirUri).build());
-            deleteFromDb = false;
-        }
-
+        int i = 0;
         for (Book book : books) {
             ContentValues values = new ContentValues();
             values.put(ItemsContract.Items.SERVER_ID, book.getId());
@@ -188,14 +177,28 @@ public class DataProvider {
             values.put(ItemsContract.Items.PHOTO_URL, book.getPhoto());
             values.put(ItemsContract.Items.ASPECT_RATIO, book.getAspect_ratio());
             values.put(ItemsContract.Items.PUBLISHED_DATE, book.getPublished_date());
-            cpo.add(ContentProviderOperation.newInsert(dirUri).withValues(values).build());
+            cv[i] = values;
+            i++;
         }
 
-        return Observable.create(emitter ->
-                context.getContentResolver().applyBatch(ItemsContract.CONTENT_AUTHORITY, cpo))
+        return Observable.just(context.getContentResolver().bulkInsert(dirUri, cv))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(contentProviderResults -> {});
+                .subscribe(
+                        this::handleInsertSuccess,
+                        throwable -> Log.e(TAG, "Error inserting to DB: ", throwable));
+    }
+
+    private void handleInsertSuccess(int numRows) {
+        Log.d(TAG, "Num rows inserted: " + numRows);
+        DataUtils.dispose(dbQueryDisposable);
+        dbQueryDisposable = queryDbForBooks();
+    }
+
+    private void deleteFromDb(){
+        context.getContentResolver().delete(ItemsContract.Items.buildDirUri(), null, null);
+        DataUtils.dispose(dataFetchDisposable);
+        dataFetchDisposable = fetchData();
     }
 
     private boolean isInternetConnected() {
@@ -205,7 +208,8 @@ public class DataProvider {
         boolean connected = networkInfo != null && networkInfo.isConnected();
 
         if (!connected && dataListener != null) {
-            dataListener.onConnectionError(ErrorType.NO_NETWORK_CONNECTION);
+            dataListener.onConnectionError(ErrorType.NO_NETWORK_CONNECTION,
+                    new ConnectException("Internet check error"));
         }
 
         return connected;
@@ -222,7 +226,8 @@ public class DataProvider {
                                               Proxy proxy, Protocol protocol, IOException ioe) {
                         super.connectFailed(call, inetSocketAddress, proxy, protocol, ioe);
                         if (dataListener != null) {
-                            dataListener.onConnectionError(ErrorType.REQUEST_TIME_OUT);
+                            dataListener.onConnectionError(ErrorType.REQUEST_TIME_OUT,
+                                    new ConnectException("Retrofit client"));
                         }
                     }
                 })
