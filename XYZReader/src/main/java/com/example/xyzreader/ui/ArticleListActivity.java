@@ -1,21 +1,17 @@
 package com.example.xyzreader.ui;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityOptions;
 import android.content.Intent;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.constraint.ConstraintLayout;
 import android.support.constraint.ConstraintSet;
-import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
-import android.support.v7.widget.Toolbar;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.View;
@@ -23,14 +19,9 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.bumptech.glide.request.target.ImageViewTarget;
-import com.bumptech.glide.request.target.SimpleTarget;
-import com.bumptech.glide.request.target.Target;
-import com.bumptech.glide.request.transition.Transition;
 import com.example.xyzreader.R;
-import com.example.xyzreader.remote.Book;
-import com.example.xyzreader.remote.BookCover;
-import com.example.xyzreader.remote.DataProvider;
+import com.example.xyzreader.utils.BookCover;
+import com.example.xyzreader.data.network.DataProvider;
 import com.example.xyzreader.utils.DataUtils;
 import com.example.xyzreader.utils.GlideApp;
 
@@ -51,14 +42,13 @@ import butterknife.Unbinder;
  * touched, lead to a {@link ArticleDetailActivity} representing item details. On tablets, the
  * activity presents a grid of items as cards.
  */
+@SuppressLint("SimpleDateFormat")
 public class ArticleListActivity extends AppCompatActivity implements DataProvider.DataListener {
 
     private static final String EXTRA_COVERS = "covers";
 
     private static final String TAG = ArticleListActivity.class.toString();
 
-    @BindView(R.id.toolbar)
-    Toolbar toolbar;
     @BindView(R.id.swipe_refresh_layout)
     SwipeRefreshLayout swipeRefreshLayout;
     @BindView(R.id.recycler_view)
@@ -70,7 +60,6 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
     private BookListAdapter bookListAdapter;
     private DataProvider dataProvider;
     private Unbinder unbinder;
-    private StaggeredGridLayoutManager sglm;
 
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
     // Use default locale format
@@ -97,7 +86,7 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
         swipeRefreshLayout.setRefreshing(true);
 
         int columnCount = getResources().getInteger(R.integer.list_column_count);
-        sglm = new StaggeredGridLayoutManager(columnCount, StaggeredGridLayoutManager.VERTICAL);
+        StaggeredGridLayoutManager sglm = new StaggeredGridLayoutManager(columnCount, StaggeredGridLayoutManager.VERTICAL);
         sglm.setGapStrategy(StaggeredGridLayoutManager.GAP_HANDLING_NONE);
         recyclerView.setLayoutManager(sglm);
 
@@ -227,13 +216,13 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
 
     public static class BookViewHolder extends RecyclerView.ViewHolder {
         @BindView(R.id.thumbnail)
-        public ImageView thumbnailView;
+        ImageView thumbnailView;
         @BindView(R.id.article_title)
-        public TextView titleView;
+        TextView titleView;
         @BindView(R.id.article_subtitle)
-        public TextView subtitleView;
+        TextView subtitleView;
         @BindView(R.id.aspect_wrapper)
-        public ConstraintLayout aspectLayout;
+        ConstraintLayout aspectLayout;
 
         BookViewHolder(View view) {
             super(view);

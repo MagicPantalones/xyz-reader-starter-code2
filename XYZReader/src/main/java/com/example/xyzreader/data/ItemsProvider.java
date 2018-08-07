@@ -16,6 +16,7 @@ import android.support.annotation.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings({"ConstantConditions", "NullableProblems"})
 public class ItemsProvider extends ContentProvider {
 	private SQLiteOpenHelper mOpenHelper;
 

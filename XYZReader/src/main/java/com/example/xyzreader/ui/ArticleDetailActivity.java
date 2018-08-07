@@ -1,5 +1,6 @@
 package com.example.xyzreader.ui;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -11,7 +12,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.CollapsingToolbarLayout;
-import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ShareCompat;
@@ -32,7 +32,7 @@ import com.bumptech.glide.request.target.ImageViewTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.example.xyzreader.R;
 import com.example.xyzreader.data.ItemsContract;
-import com.example.xyzreader.remote.BookCover;
+import com.example.xyzreader.utils.BookCover;
 import com.example.xyzreader.utils.DataUtils;
 import com.example.xyzreader.utils.GlideApp;
 
@@ -55,6 +55,7 @@ import ru.noties.markwon.Markwon;
 /**
  * An activity representing a single Article detail screen, letting you swipe between articles.
  */
+@SuppressLint("SimpleDateFormat")
 public class ArticleDetailActivity extends AppCompatActivity {
 
     private static final String TAG = ArticleDetailActivity.class.getSimpleName();
@@ -84,7 +85,6 @@ public class ArticleDetailActivity extends AppCompatActivity {
     private BookCover bookCover;
     private int defaultColor;
 
-    private BodyTextAdapter adapter;
     private Unbinder unbinder;
     private Disposable textDisposable;
     private Disposable paletteDisposable;
@@ -117,6 +117,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
 
 
         setSupportActionBar(toolbar);
+        //noinspection ConstantConditions
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         bindViews();
@@ -148,7 +149,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
             onFetchError(new Exception("No body."));
             return;
         }
-        adapter = new BodyTextAdapter(body);
+        BodyTextAdapter adapter = new BodyTextAdapter(body);
         textRecycler.setAdapter(adapter);
         textProgress.setVisibility(View.GONE);
         textRecycler.setVisibility(View.VISIBLE);
@@ -168,6 +169,7 @@ public class ArticleDetailActivity extends AppCompatActivity {
                 .subscribe(this::onFetchSuccess, this::onFetchError);
     }
 
+    @SuppressWarnings("RegExpRedundantEscape")
     private String[] prepareText() {
         Uri uri = ItemsContract.Items.buildItemUri(bookCover.getId());
         Cursor cursor = getContentResolver().query(

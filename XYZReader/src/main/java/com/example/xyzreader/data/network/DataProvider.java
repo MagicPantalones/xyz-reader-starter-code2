@@ -1,4 +1,4 @@
-package com.example.xyzreader.remote;
+package com.example.xyzreader.data.network;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -9,6 +9,8 @@ import android.net.Uri;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import com.example.xyzreader.utils.Book;
+import com.example.xyzreader.utils.BookCover;
 import com.example.xyzreader.utils.DataUtils;
 import com.example.xyzreader.data.ItemsContract;
 import com.google.gson.Gson;
@@ -61,7 +63,7 @@ public class DataProvider {
     private static final int ASPECT_RATIO = 6;
 
     private final Context context;
-    private DataListener dataListener;
+    private final DataListener dataListener;
 
     private Disposable dbQueryDisposable;
     private Disposable dataFetchDisposable;
@@ -112,7 +114,7 @@ public class DataProvider {
                 ItemsContract.Items.DEFAULT_SORT))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(this::handleDbResponse, e -> Log.e(TAG, "Error quering DB", e));
+                .subscribe(this::handleDbResponse, e -> Log.e(TAG, "Error querying DB", e));
 
     }
 
@@ -200,6 +202,7 @@ public class DataProvider {
         dataFetchDisposable = fetchData();
     }
 
+    @SuppressWarnings("ConstantConditions")
     private boolean isInternetConnected() {
         ConnectivityManager cm = (ConnectivityManager)
                 context.getSystemService(Context.CONNECTIVITY_SERVICE);

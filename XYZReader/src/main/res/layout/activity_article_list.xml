@@ -5,7 +5,6 @@
     android:id="@+id/main_container">
 
     <LinearLayout
-        android:id="@+id/list_toolbar_wrapper"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
@@ -14,8 +13,6 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?actionBarSize"
-            android:layout_marginLeft="@dimen/list_toolbar_side_margin"
-            android:layout_marginRight="@dimen/list_toolbar_side_margin"
             android:background="@color/colorPrimary"
             app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
 
@@ -39,8 +36,8 @@
                 android:layout_height="wrap_content"
                 android:clipToPadding="false"
                 android:paddingBottom="28dp"
-                android:paddingLeft="@dimen/list_side_margin"
-                android:paddingRight="@dimen/list_side_margin"
+                android:paddingStart="@dimen/marg_8dp"
+                android:paddingEnd="@dimen/marg_8dp"
                 android:paddingTop="@dimen/marg_16dp"
                 android:scrollbarStyle="outsideOverlay" />
         </android.support.v4.widget.SwipeRefreshLayout>
