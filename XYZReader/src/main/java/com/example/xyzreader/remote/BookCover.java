@@ -11,6 +11,7 @@ public class BookCover implements Parcelable{
     private String photo;
     private String thumb;
     private String publishedDate;
+    private float aspectRatio;
 
     public static final Parcelable.Creator<BookCover> CREATOR = new Creator<BookCover>() {
         @Override
@@ -31,6 +32,7 @@ public class BookCover implements Parcelable{
         this.photo = (String) in.readValue(String.class.getClassLoader());
         this.thumb = (String) in.readValue(String.class.getClassLoader());
         this.publishedDate = (String) in.readValue(String.class.getClassLoader());
+        this.aspectRatio = (float) in.readValue(float.class.getClassLoader());
     }
 
     public BookCover() {
@@ -54,6 +56,9 @@ public class BookCover implements Parcelable{
     public String getPublishedDate() { return publishedDate; }
     public void setPublishedDate(String publishedDate) { this.publishedDate = publishedDate; }
 
+    public float getAspectRatio() { return aspectRatio; }
+    public void setAspectRatio(float aspectRatio) { this.aspectRatio = aspectRatio; }
+
     @Override
     public int describeContents() {
         return 0;
@@ -67,5 +72,6 @@ public class BookCover implements Parcelable{
         dest.writeValue(photo);
         dest.writeValue(thumb);
         dest.writeValue(publishedDate);
+        dest.writeValue(aspectRatio);
     }
 }

@@ -13,17 +13,28 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <!--suppress AndroidLintContentDescription -->
-        <ImageView
-            android:id="@+id/thumbnail"
+        <android.support.constraint.ConstraintLayout
+            android:id="@+id/aspect_wrapper"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:scaleType="fitCenter"
-            android:background="@color/photo_placeholder"/>
+            android:layout_height="match_parent">
 
+            <ImageView
+                android:id="@+id/thumbnail"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:background="@color/photo_placeholder"
+                android:scaleType="centerCrop"
+                app:layout_constraintDimensionRatio="3:2"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.0"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:ignore="ContentDescription" />
+
+        </android.support.constraint.ConstraintLayout>
         <TextView
             android:id="@+id/article_title"
             style="@style/TextAppearance.AppCompat.Subhead"
@@ -34,7 +45,7 @@
             android:paddingEnd="@dimen/marg_16dp"
             android:paddingBottom="4dp"
             android:ellipsize="end"
-            android:maxLines="4" />
+            android:maxLines="4"/>
 
         <TextView
             android:id="@+id/article_subtitle"

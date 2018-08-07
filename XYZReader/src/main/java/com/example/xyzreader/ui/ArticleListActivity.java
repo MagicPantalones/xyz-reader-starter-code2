@@ -2,8 +2,14 @@ package com.example.xyzreader.ui;
 
 import android.app.ActivityOptions;
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.constraint.ConstraintLayout;
+import android.support.constraint.ConstraintSet;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
@@ -17,10 +23,15 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.request.target.ImageViewTarget;
+import com.bumptech.glide.request.target.SimpleTarget;
+import com.bumptech.glide.request.target.Target;
+import com.bumptech.glide.request.transition.Transition;
 import com.example.xyzreader.R;
 import com.example.xyzreader.remote.Book;
 import com.example.xyzreader.remote.BookCover;
 import com.example.xyzreader.remote.DataProvider;
+import com.example.xyzreader.utils.DataUtils;
 import com.example.xyzreader.utils.GlideApp;
 
 import java.text.ParseException;
@@ -59,6 +70,7 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
     private BookListAdapter bookListAdapter;
     private DataProvider dataProvider;
     private Unbinder unbinder;
+    private StaggeredGridLayoutManager sglm;
 
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
     // Use default locale format
@@ -85,8 +97,7 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
         swipeRefreshLayout.setRefreshing(true);
 
         int columnCount = getResources().getInteger(R.integer.list_column_count);
-        StaggeredGridLayoutManager sglm =
-                new StaggeredGridLayoutManager(columnCount, StaggeredGridLayoutManager.VERTICAL);
+        sglm = new StaggeredGridLayoutManager(columnCount, StaggeredGridLayoutManager.VERTICAL);
         sglm.setGapStrategy(StaggeredGridLayoutManager.GAP_HANDLING_NONE);
         recyclerView.setLayoutManager(sglm);
 
@@ -98,6 +109,7 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
         unbinder.unbind();
         super.onDestroy();
     }
+
 
     @Override
     public void onConnectionError(DataProvider.ErrorType error, Throwable throwable) {
@@ -196,6 +208,12 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
             GlideApp.with(holder.thumbnailView)
                     .load(bookCover.getThumb())
                     .into(holder.thumbnailView);
+
+            ConstraintSet set = new ConstraintSet();
+            set.clone(holder.aspectLayout);
+            set.setDimensionRatio(holder.thumbnailView.getId(),
+                    DataUtils.convertToFraction(bookCover.getAspectRatio()));
+            set.applyTo(holder.aspectLayout);
         }
 
         @Override
@@ -214,6 +232,8 @@ public class ArticleListActivity extends AppCompatActivity implements DataProvid
         public TextView titleView;
         @BindView(R.id.article_subtitle)
         public TextView subtitleView;
+        @BindView(R.id.aspect_wrapper)
+        public ConstraintLayout aspectLayout;
 
         BookViewHolder(View view) {
             super(view);

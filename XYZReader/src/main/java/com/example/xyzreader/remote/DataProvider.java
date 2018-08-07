@@ -58,6 +58,7 @@ public class DataProvider {
     private static final int AUTHOR = 3;
     private static final int THUMB_URL = 4;
     private static final int PHOTO_URL = 5;
+    private static final int ASPECT_RATIO = 6;
 
     private final Context context;
     private DataListener dataListener;
@@ -100,9 +101,6 @@ public class DataProvider {
         deleteFromDb();
     }
 
-
-
-
     private Disposable queryDbForBooks() {
         Uri uri = ItemsContract.Items.buildDirUri();
         //noinspection ConstantConditions
@@ -138,6 +136,7 @@ public class DataProvider {
                 bookCover.setThumb(cursor.getString(THUMB_URL));
                 bookCover.setPhoto(cursor.getString(PHOTO_URL));
                 bookCover.setPublishedDate(cursor.getString(PUBLISHED_DATE));
+                bookCover.setAspectRatio(cursor.getFloat(ASPECT_RATIO));
                 books.add(bookCover);
             }
             cursor.close();
